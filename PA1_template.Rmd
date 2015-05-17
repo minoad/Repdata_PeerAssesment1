@@ -1,25 +1,103 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "peerAssesment1"
+author: "Micah Norman"
+date: "May 17, 2015"
+output: html_document
 ---
+```{r, EnvironmentPrep}
+#install.packages('dplyr')
+#install.packages('gplot2')
+#install.packages('reshape2')
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+```
+```{r, supportFunctions}
+getData <- function(){
+    activity<-read.csv(file = 'activity.csv', stringsAsFactors=FALSE)
+    activity$date<-as.Date(strptime(activity$date, format='%Y-%m-%d'))
+    activity
+}
+activity <- getData()
+```
 
 
-## Loading and preprocessing the data
+## Summarazation  
+
+
+```{r, summaryData}
+activitySum <- sum(na.omit(activity$steps))
+totalSteps      <-activity %>% summarise('TotalSteps' = sum(na.omit(steps)))
+
+summaryStepsPerDay<-activity %>% group_by(date) %>% summarise('medianStepsPerDay' = median(na.omit(steps)), 'meanStepsPerDay' = mean(na.omit(steps)), 'TotalStepsPerDay' = sum(na.omit(steps)), 'minStepsPerDay' = min(steps, na.rm=TRUE) , 'maxStepsPerDay' = max(steps, na.rm=TRUE) )
+summaryStepsPerDay$dt <- ts(summaryStepsPerDay$date)
+
+
+summaryStepsPerInterval<-activity %>% group_by(interval) %>% summarise('medianStepsPerInterval' = median(na.omit(steps)), 'meanStepsPerInterval' = mean(na.omit(steps)), 'TotalStepsPerInterval' = sum(na.omit(steps)), 'minStepsPerInterval' = min(steps, na.rm=TRUE) , 'maxStepsPerInterval' = max(steps, na.rm=TRUE) )
+# summaryStepsPerInterval$dt <- ts(summaryStepsPerInterval$date)
+
+startDate   <- min(activity$date)
+endDate     <- max(activity$date)
+meanDate    <- mean(activity$date)
+
+smd<-melt(summaryStepsPerDay[complete.cases(summaryStepsPerDay),], id.vars = 'dt')
+smi<-melt(summaryStepsPerInterval[complete.cases(summaryStepsPerInterval),], id.vars = 'interval')
+```
+
+
+##### Total Steps  
+
+The total steps for all measurements between `r startDate` and `r endDate` was `r totalSteps`.  
+
+##### Summarizations
+
+##### Per Day
+```{r perDaySum}
+title<-'Steps Per Day'
+
+ggplot(data=activity)+aes(x=date)+geom_histogram(aes(y=factor(steps)), stat='identity') + ggtitle(paste('Histogram', title))
+
+ggplot(data=smd)+aes(x=dt, y=log(value), colour=variable)+geom_line() + ggtitle(paste('Summary', title))
+
+```
+
+
+## What is the mean number of steps taken per day?
+
+##### Per Interval
+
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+````{r}
+mostActiveInterval<-activity[complete.cases(activity), ] %>% group_by(interval) %>% summarise('m'=sum(steps))
+mInterval<-mostActiveInterval[which.max(mostActiveInterval$m),][,1]
+```
+
+The interval **`r mInterval`** is the most active interval accross all data in the dataset.
+
+
+No Scaling
+```{r perIntSum}
+title<-'Steps Per Interval'
+
+ggplot(data=smi)+aes(x=interval, y=value, colour=variable)+geom_line() + ggtitle(paste('Summary', title))
+
+```
+
+Scaled by Log
+```{r catFigs}
+title<-'Steps Per Interval'
+
+ggplot(data=smi)+aes(x=interval, y=log(value), colour=variable)+geom_line() + ggtitle(paste('Summary', title))
+
+```
 
 
 
-## What is mean total number of steps taken per day?
 
 
 
-## What is the average daily activity pattern?
 
 
 
-## Imputing missing values
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
